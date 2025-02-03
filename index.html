@@ -121,11 +121,14 @@
       height: 600px;
       background-color: #000;
     }
+    /* We use CSS to set the visible size; the internal resolution is set via JS */
     #trailCanvas,
     #orbitCanvas {
       position: absolute;
       top: 0;
       left: 0;
+      width: 100%;
+      height: 100%;
     }
     /* Info Box for Large Screens */
     #infoBox {
@@ -185,9 +188,10 @@
       #controls.hidden {
         transform: translateX(-250px);
       }
-      /* Center the canvas on mobile */
+      /* Vertically center the canvas area */
       #canvasArea {
-        margin-top: 60px;
+        margin: 60px 0;
+        min-height: calc(100vh - 120px);
         justify-content: center;
       }
       #canvasContainer {
@@ -199,7 +203,7 @@
         width: 100%;
         height: auto;
       }
-      /* Place the info box fixed at top-right on mobile */
+      /* Position the info box fixed at top-right on mobile */
       #infoBox {
         position: fixed;
         top: 10px;
@@ -279,8 +283,8 @@
     <!-- Right Column: Canvas & Info -->
     <div id="canvasArea">
       <div id="canvasContainer">
-        <canvas id="trailCanvas" width="600" height="600"></canvas>
-        <canvas id="orbitCanvas" width="600" height="600"></canvas>
+        <canvas id="trailCanvas"></canvas>
+        <canvas id="orbitCanvas"></canvas>
       </div>
       <!-- Info Box -->
       <div id="infoBox">
@@ -323,6 +327,8 @@
       let zoom = 1;
       let running = true;
       let animationFrameId;
+      // Array to store persistent trail segments
+      const trails = []; // each element: { x1, y1, x2, y2, color }
 
       /***** Element References *****/
       const planet1Select = document.getElementById("planet1");
@@ -353,8 +359,32 @@
       const controlsDiv = document.getElementById("controls");
       const toggleToolsBtn = document.getElementById("toggleToolsBtn");
 
+      /***** Canvas Setup & High DPI Adjustment *****/
+      // Set canvas CSS size from container
+      function setCanvasSize(canvas) {
+        const rect = canvas.getBoundingClientRect();
+        canvas.style.width = rect.width + "px";
+        canvas.style.height = rect.height + "px";
+      }
+      // For each canvas, set its CSS size and then adjust its internal resolution.
+      function resizeCanvasToDisplaySize(canvas) {
+        const pixelRatio = window.devicePixelRatio || 1;
+        const width  = canvas.clientWidth;
+        const height = canvas.clientHeight;
+        if (canvas.width !== width * pixelRatio || canvas.height !== height * pixelRatio) {
+          canvas.width  = width * pixelRatio;
+          canvas.height = height * pixelRatio;
+          return true;
+        }
+        return false;
+      }
+      // Call once initially for both canvases.
+      setCanvasSize(trailCanvas);
+      setCanvasSize(orbitCanvas);
+      resizeCanvasToDisplaySize(trailCanvas);
+      resizeCanvasToDisplaySize(orbitCanvas);
+
       /***** Populate Drop-Downs with Styled Options *****/
-      // Each drop-down already contains a "Not selected" option.
       Object.keys(planets).forEach(planet => {
         const option1 = document.createElement("option");
         option1.value = planet;
@@ -400,16 +430,8 @@
 
       function updateInfo() {
         let html = "";
-        const selPlanets = [
-          planet1Select.value,
-          planet2Select.value,
-          planet3Select.value
-        ];
-        const traceColors = [
-          color1Input.value,
-          color2Input.value,
-          color3Input.value
-        ];
+        const selPlanets = [planet1Select.value, planet2Select.value, planet3Select.value];
+        const traceColors = [color1Input.value, color2Input.value, color3Input.value];
         for (let i = 0; i < 3; i++) {
           if (selPlanets[i] !== "none") {
             html += `<div class="infoRow">
@@ -459,15 +481,25 @@
       });
 
       /***** Canvas Functions *****/
+      // Clear the trail canvas and reset the trail storage array.
       function clearTrail() {
+        // Do not call clearRect on trailCanvas if you want to retain the stored segments
         trailCtx.setTransform(1, 0, 0, 1, 0, 0);
         trailCtx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+        trails.length = 0; // clear the stored segments
         time = 0;
       }
+      // Utility: Convert degrees to radians.
       function toRadians(degrees) {
         return (degrees * Math.PI) / 180;
       }
+      // In each frame, calculate the current positions and store the new segments.
       function draw() {
+        // Resize canvases if needed.
+        resizeCanvasToDisplaySize(trailCanvas);
+        resizeCanvasToDisplaySize(orbitCanvas);
+
+        const pixelRatio = window.devicePixelRatio || 1;
         const traceColor1 = color1Input.value;
         const traceColor2 = color2Input.value;
         const traceColor3 = color3Input.value;
@@ -484,45 +516,44 @@
             pos[i] = null;
           }
         }
-        // Draw Trail Canvas
-        trailCtx.save();
-        trailCtx.translate(trailCanvas.width / 2, trailCanvas.height / 2);
-        trailCtx.scale(zoom, zoom);
+        // For each valid segment between consecutive planets, add it to the trails array.
         if (pos[0] && pos[1]) {
-          trailCtx.strokeStyle = traceColor1;
-          trailCtx.lineWidth = 0.3;
-          trailCtx.beginPath();
-          trailCtx.moveTo(pos[0].x, pos[0].y);
-          trailCtx.lineTo(pos[1].x, pos[1].y);
-          trailCtx.stroke();
+          trails.push({ x1: pos[0].x, y1: pos[0].y, x2: pos[1].x, y2: pos[1].y, color: traceColor1 });
         }
         if (pos[1] && pos[2]) {
-          trailCtx.strokeStyle = traceColor2;
-          trailCtx.beginPath();
-          trailCtx.moveTo(pos[1].x, pos[1].y);
-          trailCtx.lineTo(pos[2].x, pos[2].y);
-          trailCtx.stroke();
+          trails.push({ x1: pos[1].x, y1: pos[1].y, x2: pos[2].x, y2: pos[2].y, color: traceColor2 });
         }
         if (pos[2] && pos[0]) {
-          trailCtx.strokeStyle = traceColor3;
-          trailCtx.beginPath();
-          trailCtx.moveTo(pos[2].x, pos[2].y);
-          trailCtx.lineTo(pos[0].x, pos[0].y);
-          trailCtx.stroke();
+          trails.push({ x1: pos[2].x, y1: pos[2].y, x2: pos[0].x, y2: pos[0].y, color: traceColor3 });
         }
+
+        // Draw all stored trail segments onto the trail canvas.
+        // (We do not clear the trail canvas here so the trail remains.)
+        trailCtx.save();
+        trailCtx.translate(trailCanvas.width / 2, trailCanvas.height / 2);
+        trailCtx.scale(zoom * pixelRatio, zoom * pixelRatio);
+        trails.forEach(seg => {
+          trailCtx.strokeStyle = seg.color;
+          trailCtx.lineWidth = 0.3;
+          trailCtx.beginPath();
+          trailCtx.moveTo(seg.x1, seg.y1);
+          trailCtx.lineTo(seg.x2, seg.y2);
+          trailCtx.stroke();
+        });
         trailCtx.restore();
-        // Draw Orbit Canvas
+
+        // Draw current positions on the orbit canvas (cleared each frame).
         orbitCtx.setTransform(1, 0, 0, 1, 0, 0);
         orbitCtx.clearRect(0, 0, orbitCanvas.width, orbitCanvas.height);
         orbitCtx.save();
         orbitCtx.translate(orbitCanvas.width / 2, orbitCanvas.height / 2);
-        orbitCtx.scale(zoom, zoom);
-        // Draw Sun
+        orbitCtx.scale(zoom * pixelRatio, zoom * pixelRatio);
+        // Draw Sun.
         orbitCtx.fillStyle = sunColor;
         orbitCtx.beginPath();
         orbitCtx.arc(0, 0, sunRadius, 0, Math.PI * 2);
         orbitCtx.fill();
-        // Draw Planets
+        // Draw each planet.
         if (pos[0]) {
           const name = planet1Select.value;
           orbitCtx.fillStyle = planetDisplayColors[name];
@@ -545,6 +576,7 @@
           orbitCtx.fill();
         }
         orbitCtx.restore();
+
         time += speed;
         if (running) {
           animationFrameId = requestAnimationFrame(draw);
@@ -568,6 +600,7 @@
         clearTrail();
       });
       saveImageBtn.addEventListener("click", () => {
+        // Create an offscreen canvas to combine both canvases.
         const offscreen = document.createElement("canvas");
         offscreen.width = trailCanvas.width;
         offscreen.height = trailCanvas.height;
