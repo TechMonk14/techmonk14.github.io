@@ -328,7 +328,7 @@
       let running = true;
       let animationFrameId;
       // Array to store persistent trail segments
-      const trails = []; // each element: { x1, y1, x2, y2, color }
+      const trails = [];
 
       /***** Element References *****/
       const planet1Select = document.getElementById("planet1");
@@ -360,13 +360,12 @@
       const toggleToolsBtn = document.getElementById("toggleToolsBtn");
 
       /***** Canvas Setup & High DPI Adjustment *****/
-      // Set canvas CSS size from container
+      // Set CSS size and adjust internal resolution
       function setCanvasSize(canvas) {
         const rect = canvas.getBoundingClientRect();
         canvas.style.width = rect.width + "px";
         canvas.style.height = rect.height + "px";
       }
-      // For each canvas, set its CSS size and then adjust its internal resolution.
       function resizeCanvasToDisplaySize(canvas) {
         const pixelRatio = window.devicePixelRatio || 1;
         const width  = canvas.clientWidth;
@@ -378,7 +377,7 @@
         }
         return false;
       }
-      // Call once initially for both canvases.
+      // Initially set size for both canvases.
       setCanvasSize(trailCanvas);
       setCanvasSize(orbitCanvas);
       resizeCanvasToDisplaySize(trailCanvas);
@@ -481,19 +480,18 @@
       });
 
       /***** Canvas Functions *****/
-      // Clear the trail canvas and reset the trail storage array.
+      // Clear the trail canvas and reset the trails array.
       function clearTrail() {
-        // Do not call clearRect on trailCanvas if you want to retain the stored segments
         trailCtx.setTransform(1, 0, 0, 1, 0, 0);
         trailCtx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
-        trails.length = 0; // clear the stored segments
+        trails.length = 0; // Clear stored segments.
         time = 0;
       }
       // Utility: Convert degrees to radians.
       function toRadians(degrees) {
         return (degrees * Math.PI) / 180;
       }
-      // In each frame, calculate the current positions and store the new segments.
+      // Main draw function.
       function draw() {
         // Resize canvases if needed.
         resizeCanvasToDisplaySize(trailCanvas);
@@ -516,7 +514,7 @@
             pos[i] = null;
           }
         }
-        // For each valid segment between consecutive planets, add it to the trails array.
+        // Store segments in the trails array.
         if (pos[0] && pos[1]) {
           trails.push({ x1: pos[0].x, y1: pos[0].y, x2: pos[1].x, y2: pos[1].y, color: traceColor1 });
         }
@@ -526,11 +524,10 @@
         if (pos[2] && pos[0]) {
           trails.push({ x1: pos[2].x, y1: pos[2].y, x2: pos[0].x, y2: pos[0].y, color: traceColor3 });
         }
-
-        // Draw all stored trail segments onto the trail canvas.
-        // (We do not clear the trail canvas here so the trail remains.)
+        // Draw all stored trail segments.
         trailCtx.save();
         trailCtx.translate(trailCanvas.width / 2, trailCanvas.height / 2);
+        // Scale with zoom and pixel ratio.
         trailCtx.scale(zoom * pixelRatio, zoom * pixelRatio);
         trails.forEach(seg => {
           trailCtx.strokeStyle = seg.color;
@@ -542,7 +539,7 @@
         });
         trailCtx.restore();
 
-        // Draw current positions on the orbit canvas (cleared each frame).
+        // Draw current positions on orbit canvas.
         orbitCtx.setTransform(1, 0, 0, 1, 0, 0);
         orbitCtx.clearRect(0, 0, orbitCanvas.width, orbitCanvas.height);
         orbitCtx.save();
@@ -553,7 +550,7 @@
         orbitCtx.beginPath();
         orbitCtx.arc(0, 0, sunRadius, 0, Math.PI * 2);
         orbitCtx.fill();
-        // Draw each planet.
+        // Draw Planets.
         if (pos[0]) {
           const name = planet1Select.value;
           orbitCtx.fillStyle = planetDisplayColors[name];
@@ -599,14 +596,20 @@
       restartBtn.addEventListener("click", () => {
         clearTrail();
       });
+      // Save Image: create a high resolution offscreen canvas.
       saveImageBtn.addEventListener("click", () => {
-        // Create an offscreen canvas to combine both canvases.
+        const pixelRatio = window.devicePixelRatio || 1;
+        // Use the CSS dimensions multiplied by pixelRatio for high-res output.
+        const width = trailCanvas.clientWidth * pixelRatio;
+        const height = trailCanvas.clientHeight * pixelRatio;
         const offscreen = document.createElement("canvas");
-        offscreen.width = trailCanvas.width;
-        offscreen.height = trailCanvas.height;
+        offscreen.width = width;
+        offscreen.height = height;
         const offCtx = offscreen.getContext("2d");
-        offCtx.drawImage(trailCanvas, 0, 0);
-        offCtx.drawImage(orbitCanvas, 0, 0);
+        // Draw trail canvas
+        offCtx.drawImage(trailCanvas, 0, 0, width, height);
+        // Draw orbit canvas
+        offCtx.drawImage(orbitCanvas, 0, 0, width, height);
         const dataURL = offscreen.toDataURL("image/png");
         const link = document.createElement("a");
         link.href = dataURL;
