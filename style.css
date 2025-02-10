@@ -1,0 +1,241 @@
+/* Global Styles */
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #000;
+  color: #fff;
+  font-family: sans-serif;
+}
+/* Main Wrapper */
+#wrapper {
+  display: flex;
+  min-height: 100vh;
+  transition: margin-left 0.3s ease;
+}
+/* Left Column: Control Panel */
+#controls {
+  width: 250px;
+  padding: 15px;
+  background-color: #222;
+  box-sizing: border-box;
+  overflow-y: auto;
+  transition: transform 0.3s ease;
+}
+/* Hide controls when .hidden is applied */
+#controls.hidden {
+  transform: translateX(-250px);
+}
+#controls h1 {
+  font-size: 1.4em;
+  margin-bottom: 15px;
+  text-align: center;
+}
+.control-group {
+  margin-bottom: 15px;
+}
+.control-group label {
+  display: block;
+  margin-bottom: 5px;
+}
+.control-group select,
+.control-group input[type="color"],
+.control-group input[type="range"] {
+  width: 100%;
+  padding: 5px;
+  box-sizing: border-box;
+  margin-bottom: 5px;
+  border: none;
+  border-radius: 4px;
+  font-size: 1em;
+}
+.control-group select {
+  background-color: #444;
+  color: #fff;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+.control-group select::-ms-expand {
+  display: none;
+}
+.button-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 15px;
+}
+.button-group button,
+#saveImageBtn {
+  width: 100%;
+  padding: 10px;
+  background-color: #444;
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 1em;
+  margin-bottom: 10px;
+}
+.button-group button:hover,
+#saveImageBtn:hover {
+  background-color: #666;
+}
+/* Toggle Button for Mobile */
+#toggleToolsBtn {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 1000;
+  background-color: #444;
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  padding: 10px;
+  cursor: pointer;
+  font-size: 1em;
+}
+#toggleToolsBtn:hover {
+  background-color: #666;
+}
+/* Right Column: Canvas & Info */
+#canvasArea {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 15px;
+  box-sizing: border-box;
+  background-color: #000;
+  position: relative;
+}
+#canvasContainer {
+  position: relative;
+  width: 600px;
+  height: 600px;
+  background-color: #000;
+}
+/* We use CSS to set the visible size; the internal resolution is set via JS */
+#trailCanvas,
+#orbitCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+/* Info Box for Large Screens */
+#infoBox {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background-color: rgba(0, 0, 0, 0.8);
+  padding: 10px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  font-size: 0.9em;
+  max-width: 220px;
+}
+#infoBox h2 {
+  font-size: 1.1em;
+  margin-top: 0;
+  text-align: center;
+}
+.infoRow {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.infoRow:last-child {
+  margin-bottom: 0;
+}
+.planetCircle {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 8px;
+  border: 1px solid #fff;
+}
+.infoName {
+  flex: 1;
+}
+.traceLine {
+  width: 40px;
+  height: 6px;
+  border-radius: 3px;
+  margin-left: 8px;
+}
+/* Responsive Styles */
+@media (max-width: 768px) {
+  #wrapper {
+    flex-direction: column;
+  }
+  /* Hide the controls by default on mobile */
+  #controls {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 999;
+    font-size: 1em;
+  }
+  #controls.hidden {
+    transform: translateX(-250px);
+  }
+  /* Vertically center the canvas area */
+  #canvasArea {
+    margin: 60px 0;
+    min-height: calc(100vh - 120px);
+    justify-content: center;
+  }
+  #canvasContainer {
+    width: 100%;
+    height: auto;
+    max-width: 600px;
+  }
+  #canvasContainer canvas {
+    width: 100%;
+    height: auto;
+  }
+  /* Position the info box fixed at top-right on mobile */
+  #infoBox {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    margin-top: 0;
+    max-width: 80%;
+    text-align: center;
+    font-size: 0.9em;
+  }
+  /* Show the toggle button on mobile */
+  #toggleToolsBtn {
+    display: block;
+    padding: 10px;
+    font-size: 1em;
+  }
+  body {
+    font-size: 1em;
+  }
+  #controls h1 {
+    font-size: 1.4em;
+  }
+  .control-group label {
+    font-size: 1em;
+  }
+  .control-group select,
+  .control-group input[type="color"],
+  .control-group input[type="range"] {
+    padding: 8px;
+    font-size: 1em;
+  }
+  .button-group button,
+  #saveImageBtn {
+    padding: 8px;
+    font-size: 1em;
+  }
+}
+@media (min-width: 769px) {
+  #toggleToolsBtn {
+    display: none;
+  }
+} 
